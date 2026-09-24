@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+node_modules/
+.codex-task.txt
+.vercel/
+preview-*.png
+verify-*.png
+reference-*.png
