@@ -6,3 +6,4 @@ node_modules/
 preview-*.png
 verify-*.png
 reference-*.png
+.vercel
