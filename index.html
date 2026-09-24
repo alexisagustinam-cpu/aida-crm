@@ -15,7 +15,7 @@
     <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
       <div class="brand"><span>AIDA</span><small>OS</small></div>
       <nav class="nav" aria-label="Módulos">
-        <button class="nav-link active" data-view="overview">Resumen</button>
+        <button class="nav-link active" data-view="overview">Dashboard</button>
         <button class="nav-link" data-view="clients">Clientes</button>
         <button class="nav-link" data-view="opportunities">Oportunidades</button>
         <button class="nav-link" data-view="projects">Proyectos</button>
@@ -29,7 +29,7 @@
     </aside>
     <div class="mobile-bar"><button class="icon-button menu-text" id="menuButton" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">Menú</button><div class="brand">AIDA <small>OS</small></div><button class="icon-button create-text" id="mobileNew" aria-label="Crear registro">Crear</button></div>
     <main class="workspace">
-      <header class="topbar"><div><p class="date" id="today"></p><h1 id="viewTitle">Resumen</h1></div><div class="top-actions"><label class="search"><input id="searchInput" type="search" placeholder="Buscar en el espacio" aria-label="Buscar clientes, oportunidades y tareas" /><kbd>⌘ K</kbd></label><button class="primary-button" id="newButton">Crear <kbd>N</kbd></button></div></header>
+      <header class="topbar"><div><h1 id="viewTitle">Dashboard</h1><p class="date" id="today"></p></div><div class="top-actions"><label class="search"><input id="searchInput" type="search" placeholder="Buscar registros" aria-label="Buscar clientes, oportunidades y tareas" /><kbd>Ctrl K</kbd></label><button class="primary-button" id="newButton">+ Nuevo <kbd>N</kbd></button></div></header>
       <div id="viewContent"></div>
     </main>
   </div>
@@ -37,7 +37,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <dialog id="entryDialog" aria-labelledby="dialogTitle"><form method="dialog" id="entryForm"><div class="dialog-head"><div><p class="eyebrow" id="dialogType">NUEVO REGISTRO</p><h2 id="dialogTitle">Crear</h2></div><button class="close-button" value="cancel" aria-label="Cerrar" >Cerrar</button></div><div id="formFields" class="form-grid"></div><div class="dialog-foot"><button class="secondary-button" value="cancel">Cancelar</button><button class="primary-button" id="saveButton" value="default">Guardar</button></div></form></dialog>
-  <dialog id="detailDialog" aria-labelledby="detailTitle"><div class="dialog-head"><div><p class="eyebrow" id="detailType"></p><h2 id="detailTitle"></h2></div><button class="close-button" id="detailClose" aria-label="Cerrar" >Cerrar</button></div><div id="detailBody"></div><div class="dialog-foot"><button class="secondary-button" id="detailCloseBottom">Cerrar</button><button class="primary-button" id="detailEdit">Editar</button></div></dialog>
+  <dialog id="detailDialog" aria-labelledby="detailTitle"><div id="detailBody"></div><div class="dialog-foot detail-actions"><button class="text-button danger" id="detailDelete">Eliminar</button><span></span><button class="secondary-button" id="detailCloseBottom">Cerrar</button><button class="primary-button" id="detailEdit">Editar</button></div></dialog>
   <dialog id="commandDialog" aria-labelledby="commandTitle"><div class="dialog-head"><div><p class="eyebrow">ACCESO RÁPIDO</p><h2 id="commandTitle">¿Qué quieres crear?</h2></div><button class="close-button" id="commandClose" aria-label="Cerrar" >Cerrar</button></div><div class="command-list"><button data-kind="client"><b>Cliente</b><span>Organiza una relación de trabajo</span></button><button data-kind="opportunity"><b>Oportunidad</b><span>Registra una conversación comercial</span></button><button data-kind="task"><b>Tarea</b><span>Define el siguiente paso del equipo</span></button></div></dialog>
   <input type="file" id="importInput" accept="application/json" hidden />
   <script src="app.js"></script>
