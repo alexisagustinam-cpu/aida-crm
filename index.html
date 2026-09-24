@@ -1,45 +1,30 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="AIDA OS, espacio de operaciones local para equipos de agencia." />
-  <title>AIDA OS — Operaciones</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Presentación local de AIDA CRM.">
+  <title>AIDA CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
-      <div class="brand"><span>AIDA</span><small>OS</small></div>
+      <div class="side-top"><img class="aida-logo" src="assets/reference/AIDA_LOGO_PNG.png" alt="AIDA"><button class="drawer-close icon-btn" aria-label="Cerrar menú" data-close-drawer></button></div>
       <nav class="nav" aria-label="Módulos">
-        <button class="nav-link active" data-view="overview">Dashboard</button>
-        <button class="nav-link" data-view="clients">Clientes</button>
-        <button class="nav-link" data-view="opportunities">Oportunidades</button>
-        <button class="nav-link" data-view="projects">Proyectos</button>
-        <button class="nav-link" data-view="tasks">Tareas</button>
-        <button class="nav-link" data-view="team">Equipo</button>
+        <button class="nav-link" data-view="dashboard" data-icon="home">Inicio</button><button class="nav-link" data-view="leads" data-icon="users">Leads</button><button class="nav-link" data-view="clients" data-icon="briefcase">Clientes</button><button class="nav-link" data-view="pipeline" data-icon="chart">Pipeline</button><button class="nav-link" data-view="projects" data-icon="folder">Proyectos</button><button class="nav-link" data-view="tasks" data-icon="check">Tareas</button><button class="nav-link" data-view="automations" data-icon="bolt">Automatizaciones</button><button class="nav-link" data-view="reports" data-icon="report">Reportes</button><button class="nav-link" data-view="settings" data-icon="settings">Configuración</button>
       </nav>
-      <div class="sidebar-bottom">
-        <button class="nav-link" data-view="settings">Ajustes</button>
-        <p class="local-note"><i></i>Datos guardados en este navegador</p>
-      </div>
+      <div class="side-bottom"><section class="brand-callout"><span class="shape shape-blue"></span><span class="shape shape-orange"></span><p>Ideas digitales para<br>un mundo real.</p><button class="circle-arrow" aria-label="Más sobre AIDA">↗</button></section><div class="operator"><img src="assets/team/agustin.jpg" alt=""><span><b>Agustín Mejías</b><small>Administrador</small></span><button class="more-btn" aria-label="Más opciones">•••</button></div></div>
     </aside>
-    <div class="mobile-bar"><button class="icon-button menu-text" id="menuButton" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">Menú</button><div class="brand">AIDA <small>OS</small></div><button class="icon-button create-text" id="mobileNew" aria-label="Crear registro">Crear</button></div>
-    <main class="workspace">
-      <header class="topbar"><div><h1 id="viewTitle">Dashboard</h1><p class="date" id="today"></p></div><div class="top-actions"><label class="search"><input id="searchInput" type="search" placeholder="Buscar registros" aria-label="Buscar clientes, oportunidades y tareas" /><kbd>Ctrl K</kbd></label><button class="primary-button" id="newButton">+ Nuevo <kbd>N</kbd></button></div></header>
-      <div id="viewContent"></div>
-    </main>
+    <div class="backdrop" id="backdrop"></div>
+    <header class="mobile-header"><button class="icon-btn menu-btn" id="menuButton" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"></button><img class="aida-logo" src="assets/reference/AIDA_LOGO_PNG.png" alt="AIDA"><button class="notification" aria-label="Notificaciones"></button></header>
+    <main class="main"><header class="topbar"><div class="crumb" id="crumb"></div><label class="search"><span class="search-symbol"></span><input id="searchInput" type="search" placeholder="Buscar clientes, leads, proyectos…" aria-label="Buscar clientes, leads, proyectos"><kbd>⌘ K</kbd></label><div class="top-actions"><button class="notification" aria-label="Notificaciones"></button><button class="profile" data-view="settings"><img src="assets/team/agustin.jpg" alt=""><span><b>Agustín Mejías</b><small>Administrador</small></span></button></div></header><div id="viewContent"></div></main>
   </div>
-  <div class="backdrop" id="backdrop"></div>
-  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
-  <dialog id="entryDialog" aria-labelledby="dialogTitle"><form method="dialog" id="entryForm"><div class="dialog-head"><div><p class="eyebrow" id="dialogType">NUEVO REGISTRO</p><h2 id="dialogTitle">Crear</h2></div><button class="close-button" value="cancel" aria-label="Cerrar" >Cerrar</button></div><div id="formFields" class="form-grid"></div><div class="dialog-foot"><button class="secondary-button" value="cancel">Cancelar</button><button class="primary-button" id="saveButton" value="default">Guardar</button></div></form></dialog>
-  <dialog id="detailDialog" aria-labelledby="detailTitle"><div id="detailBody"></div><div class="dialog-foot detail-actions"><button class="text-button danger" id="detailDelete">Eliminar</button><span></span><button class="secondary-button" id="detailCloseBottom">Cerrar</button><button class="primary-button" id="detailEdit">Editar</button></div></dialog>
-  <dialog id="commandDialog" aria-labelledby="commandTitle"><div class="dialog-head"><div><p class="eyebrow">ACCESO RÁPIDO</p><h2 id="commandTitle">¿Qué quieres crear?</h2></div><button class="close-button" id="commandClose" aria-label="Cerrar" >Cerrar</button></div><div class="command-list"><button data-kind="client"><b>Cliente</b><span>Organiza una relación de trabajo</span></button><button data-kind="opportunity"><b>Oportunidad</b><span>Registra una conversación comercial</span></button><button data-kind="task"><b>Tarea</b><span>Define el siguiente paso del equipo</span></button></div></dialog>
-  <input type="file" id="importInput" accept="application/json" hidden />
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="editDialog" aria-labelledby="editTitle"><form id="editForm"><header class="dialog-head"><div><p>CLIENTE</p><h2 id="editTitle">Editar cliente</h2></div><button type="button" class="icon-btn dialog-close" data-close-dialog aria-label="Cerrar"></button></header><div class="form-grid"><label>Nombre<input name="name" required></label><label>Estado<select name="status"><option>Activo</option><option>En pausa</option><option>Prospecto</option></select></label><label>Contacto<input name="contact"></label><label>Correo<input type="email" name="email"></label><label>Teléfono<input name="phone"></label><label>Ciudad<input name="location"></label><label class="full">Descripción<textarea name="description"></textarea></label></div><footer class="dialog-foot"><button type="button" class="quiet-button" data-close-dialog>Cancelar</button><button class="primary-button">Guardar cambios</button></footer></form></dialog>
   <script src="app.js"></script>
 </body>
 </html>
