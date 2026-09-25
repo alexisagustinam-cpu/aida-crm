@@ -11,8 +11,9 @@ export default async function ProfilePage() {
       <AvatarUploader name={member.name} avatar={member.avatar} />
       <InlineForm action={A.updateProfile} className="settings-form" resetOnSuccess={false}>
         <label>Nombre<input name="name" required defaultValue={member.name} /></label>
-        <label>Cargo<input name="role" defaultValue={member.role} list="aida-roles" /></label>
-        <datalist id="aida-roles"><option value="Administrador" /><option value="Ventas" /><option value="Diseño" /><option value="Desarrollo" /><option value="Equipo" /></datalist>
+        <label>Cargo<input name="title" defaultValue={member.title ?? ''} list="aida-titles" placeholder="Ej.: Diseño" /></label>
+        <datalist id="aida-titles"><option value="Dirección" /><option value="Ventas" /><option value="Diseño" /><option value="Desarrollo" /><option value="SEO" /><option value="Contenido" /></datalist>
+        <label className="full">Permiso<input value={member.role === 'Administrador' ? 'Administrador (puede invitar, conectar integraciones y exportar datos)' : 'Equipo'} readOnly disabled /></label>
         <label className="full">Correo de la cuenta<input value={member.email} readOnly disabled /></label>
         <div className="form-actions"><SubmitButton>Guardar perfil</SubmitButton></div>
       </InlineForm>

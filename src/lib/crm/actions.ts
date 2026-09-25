@@ -300,7 +300,8 @@ export const markNotificationsRead = action(async (member, ids: string[]) => {
 
 export const updateProfile = action(async (member, fd: FormData) => {
   const db = await getDb()
-  await db.update(s.members).set({ name: req(fd, 'name', 'tu nombre'), role: str(fd, 'role') ?? member.role }).where(eq(s.members.id, member.id))
+  // El permiso (role) no se toca aquí: solo un administrador lo cambia desde Configuración → Equipo.
+  await db.update(s.members).set({ name: req(fd, 'name', 'tu nombre'), title: str(fd, 'title') }).where(eq(s.members.id, member.id))
   return { ok: true, message: 'Perfil guardado.' }
 })
 

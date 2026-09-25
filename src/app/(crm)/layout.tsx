@@ -21,6 +21,6 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   const notifications = (await getNotifications(member.id)).map(n => ({ ...n, createdAt: n.createdAt.toISOString(), ago: formatAgo(n.createdAt) }))
   return <>
     <script dangerouslySetInnerHTML={{ __html: bootScript }} />
-    <CrmShell member={{ name: member.name, role: member.role, avatar: member.avatar }} notifications={notifications}>{children}</CrmShell>
+    <CrmShell member={{ name: member.name, role: member.title || member.role, avatar: member.avatar }} notifications={notifications}>{children}</CrmShell>
   </>
 }

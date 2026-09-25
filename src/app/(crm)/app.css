@@ -324,3 +324,16 @@ code{font-family:var(--font-jetbrains),monospace;font-size:.92em}
 .ai-text{white-space:pre-wrap;line-height:1.65;font-size:14px}
 .form-grid .segmented{justify-self:start}
 .settings-form label{align-content:start}
+
+/* Equipo y acceso */
+.invite-form{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.8fr) auto;gap:10px;align-items:end;margin-top:14px}
+.invite-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+.invite-form input,.invite-form select{border:1px solid var(--line2);background:var(--panel2);color:var(--text);border-radius:8px;padding:10px 12px;font:inherit;font-size:14px;min-width:0}
+.invite-form .primary-button{min-height:42px}
+.key-reveal small{display:block;margin-top:8px}
+.team-row{flex-wrap:wrap}
+.team-row>span:nth-child(2){flex:1;min-width:200px}
+.team-row-side{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.team-row-side select{border:1px solid var(--line2);background:var(--panel2);color:var(--text);border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:700}
+.team-row.is-off{opacity:.6}
+@media(max-width:760px){.invite-form{grid-template-columns:1fr}.team-row-side{margin-left:0;justify-content:flex-start;width:100%;padding-left:48px}}

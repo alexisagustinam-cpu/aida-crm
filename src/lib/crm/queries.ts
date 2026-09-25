@@ -290,12 +290,6 @@ export async function getNotifications(memberId: string, limit = 12) {
   return rows.map(n => ({ ...n, read: n.readBy.includes(memberId) }))
 }
 
-export async function getMembers() {
-  const db = await getDb()
-  return db.select({ id: s.members.id, name: s.members.name, email: s.members.email, role: s.members.role, avatar: s.members.avatar, createdAt: s.members.createdAt })
-    .from(s.members).orderBy(asc(s.members.createdAt))
-}
-
 export async function getSetting<T>(key: string): Promise<T | null> {
   const db = await getDb()
   const [row] = await db.select().from(s.settings).where(eq(s.settings.key, key))

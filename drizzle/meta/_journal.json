@@ -15,6 +15,13 @@
       "when": 1790311347997,
       "tag": "0001_integraciones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790360182299,
+      "tag": "0002_acceso",
+      "breakpoints": true
     }
   ]
 }

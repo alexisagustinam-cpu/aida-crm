@@ -1,18 +1,20 @@
 import { requireMember } from '@/lib/auth/member'
-import { getMembers } from '@/lib/crm/queries'
-import { formatLongDate } from '@/lib/crm/format'
-import { Avatar } from '@/components/crm/ui'
+import { getTeam } from '@/lib/crm/team'
+import { Team } from '@/components/crm/team'
+
+const iso = (d: Date | null) => d?.toISOString() ?? null
 
 export default async function TeamPage() {
-  const [member, members] = await Promise.all([requireMember(), getMembers()])
+  const [member, rows] = await Promise.all([requireMember(), getTeam()])
+  const isAdmin = member.role === 'Administrador'
+  const now = new Date()
   return (
     <article className="panel settings-section">
-      <h2>Equipo</h2><p>Personas que ya entraron al CRM. Para sumar a alguien, compártele el enlace del CRM y que cree su cuenta (o entre con Google). Sus correos reciben los avisos por correo.</p>
-      <div className="list-rows">
-        {members.map(m => (
-          <div key={m.id} className="list-row"><Avatar name={m.name} src={m.avatar} /><span><b>{m.name}{m.id === member.id ? ' (tú)' : ''}</b><small>{m.email} · desde {formatLongDate(m.createdAt)}</small></span><span className="pill" style={{ marginLeft: 'auto' }}>{m.role}</span></div>
-        ))}
-      </div>
+      <h2>Equipo y acceso</h2>
+      <p>Solo entran al CRM las personas de esta lista. {isAdmin
+        ? 'Invita a alguien con su correo: recibe un enlace para crear su contraseña, o entra con Google si su correo es de Google. Quien entre sin invitación queda bloqueado y te llega un aviso en la campana.'
+        : 'Para sumar a alguien, pídele a un administrador que lo invite.'}</p>
+      <Team rows={rows.map(({ inviteAcceptedAt, ...r }) => ({ ...r, inviteExpiresAt: iso(r.inviteExpiresAt), lastSeenAt: iso(r.lastSeenAt), inviteExpired: !inviteAcceptedAt && (!r.inviteExpiresAt || r.inviteExpiresAt < now) }))} meId={member.id} isAdmin={isAdmin} />
     </article>
   )
 }

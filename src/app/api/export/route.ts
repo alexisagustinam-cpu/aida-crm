@@ -18,7 +18,10 @@ const csvCell = (v: unknown) => {
 
 // Exporta los datos del CRM: todo en JSON, o una tabla en CSV (?formato=csv&tabla=facturas).
 export async function GET(request: Request) {
-  if (!(await getCurrentMember())) return NextResponse.json({ error: 'Sin sesión' }, { status: 401 })
+  const member = await getCurrentMember()
+  if (!member) return NextResponse.json({ error: 'Sin sesión' }, { status: 401 })
+  // Descargar toda la base es solo para administradores.
+  if (member.role !== 'Administrador') return NextResponse.json({ error: 'Solo un administrador puede exportar los datos' }, { status: 403 })
   const url = new URL(request.url)
   const db = await getDb()
   const table = url.searchParams.get('tabla') as keyof typeof TABLES | null

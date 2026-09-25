@@ -8,14 +8,25 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull(
 // Perfil de cada persona del equipo, ligado a su cuenta de Neon Auth.
 export const members = pgTable('members', {
   id: uuid('id').primaryKey().defaultRandom(),
-  authUserId: text('auth_user_id').notNull().unique(),
+  // Vacío mientras la invitación está pendiente; se llena la primera vez que la persona entra.
+  authUserId: text('auth_user_id').unique(),
   email: text('email').notNull(),
   name: text('name').notNull(),
-  role: text('role').notNull().default('Equipo'),
+  role: text('role').notNull().default('Equipo'), // permiso: 'Administrador' o 'Equipo'
+  title: text('title'), // cargo visible (Diseño, Ventas…); lo edita cada persona
+  active: boolean('active').notNull().default(true), // desactivado = sin acceso, aunque tenga sesión
+  invitedBy: text('invited_by'),
+  inviteTokenHash: text('invite_token_hash'), // sha256 del enlace de invitación (el enlace solo se muestra una vez)
+  inviteExpiresAt: timestamp('invite_expires_at', { withTimezone: true }),
+  // Se marca cuando alguien crea su cuenta de email con el enlace de invitación: esa cuenta (la única
+  // con ese correo en Neon Auth) puede tomar la invitación aunque su correo no esté verificado.
+  inviteAcceptedAt: timestamp('invite_accepted_at', { withTimezone: true }),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
   avatar: text('avatar'), // data URL de una foto pequeña (≤256 px) subida desde Configuración
   preferences: jsonb('preferences').$type<MemberPreferences>().notNull().default({}),
   createdAt: createdAt(),
 })
+export const ROLES = ['Administrador', 'Equipo'] as const
 export type MemberPreferences = { notifyTasks?: boolean; notifyLeads?: boolean; notifyPayments?: boolean }
 
 export const clients = pgTable('clients', {

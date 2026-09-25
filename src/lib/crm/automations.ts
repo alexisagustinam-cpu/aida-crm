@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, eq, gte, lt, sql } from 'drizzle-orm'
+import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm'
 import { getDb, schema as s } from '@/db'
 import { formatDue, formatTime, todayKey } from './format'
 import { getIntegration, IntegrationError, sendEmail, sendWebhookEvent, type IntegrationKey } from './integrations'
@@ -52,7 +52,8 @@ export async function emitEvent(event: string, data: Record<string, unknown>) {
 
 async function teamEmails() {
   const db = await getDb()
-  return (await db.select({ email: s.members.email }).from(s.members)).map(m => m.email).filter(e => e.includes('@') && !e.endsWith('.local'))
+  // Solo miembros activos que ya entraron (no invitaciones pendientes ni desactivados).
+  return (await db.select({ email: s.members.email }).from(s.members).where(and(eq(s.members.active, true), isNotNull(s.members.authUserId)))).map(m => m.email).filter(e => e.includes('@') && !e.endsWith('.local'))
 }
 
 // Lead nuevo (desde el CRM, la web, n8n o MCP): aviso en la campana, correo al equipo y evento.
