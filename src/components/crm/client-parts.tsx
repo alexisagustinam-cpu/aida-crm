@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import * as A from '@/lib/crm/actions'
 import { ClientDialog, InvoiceDialog, MeetingDialog, RetainerDialog, TaskDialog } from './forms'
 import { useToast } from './shell'
+import { Composer, SummaryDialog, type Capabilities } from './composer'
 
 type Option = { id: string; name: string }
 
@@ -20,9 +21,10 @@ function useMenu() {
   return { open, setOpen, ref }
 }
 
-// "Enviar mensaje": abre WhatsApp, el correo o una llamada con los datos del cliente.
-export function MessageMenu({ phone, email, name }: { phone: string | null; email: string | null; name: string }) {
+// "Enviar mensaje": redactar (con IA si está conectada) y enviar por API, o abrir WhatsApp / correo.
+export function MessageMenu({ clientId, phone, email, name, caps }: { clientId: string; phone: string | null; email: string | null; name: string; caps: Capabilities }) {
   const { open, setOpen, ref } = useMenu()
+  const [composer, setComposer] = useState<null | 'whatsapp' | 'email'>(null)
   const digits = phone?.replace(/\D/g, '')
   const hello = encodeURIComponent(`Hola, ${name}. Te escribimos de AIDA Digital Solutions.`)
   return (
@@ -30,30 +32,33 @@ export function MessageMenu({ phone, email, name }: { phone: string | null; emai
       <button type="button" className="primary-button" aria-expanded={open} onClick={() => setOpen(o => !o)}>Enviar mensaje</button>
       {open && (
         <div className="menu-pop" role="menu">
-          {digits ? <a role="menuitem" href={`https://wa.me/${digits}?text=${hello}`} target="_blank" rel="noreferrer">WhatsApp · {phone}</a> : <button disabled>WhatsApp · falta el teléfono</button>}
-          {email ? <a role="menuitem" href={`mailto:${email}?subject=${encodeURIComponent('AIDA Digital Solutions')}`}>Correo · {email}</a> : <button disabled>Correo · falta el correo</button>}
+          <button role="menuitem" disabled={!digits} onClick={() => { setOpen(false); setComposer('whatsapp') }}>Escribir por WhatsApp{caps.ai ? ' (con IA)' : ''}{digits ? '' : ' · falta el teléfono'}</button>
+          <button role="menuitem" disabled={!email} onClick={() => { setOpen(false); setComposer('email') }}>Escribir correo{caps.ai ? ' (con IA)' : ''}{email ? '' : ' · falta el correo'}</button>
+          {digits && <a role="menuitem" href={`https://wa.me/${digits}?text=${hello}`} target="_blank" rel="noreferrer">Abrir chat de WhatsApp</a>}
           {digits && <a role="menuitem" href={`tel:+${digits}`}>Llamar</a>}
         </div>
       )}
+      {composer && <Composer key={composer} open onClose={() => setComposer(null)} clientId={clientId} name={name} phone={phone} email={email} caps={caps} initialChannel={composer} />}
     </div>
   )
 }
 
 type ClientLike = Parameters<typeof ClientDialog>[0]['client'] & { archived: boolean }
 
-export function ClientActions({ client, clients, projects }: { client: NonNullable<ClientLike>; clients: Option[]; projects: Option[] }) {
+export function ClientActions({ client, clients, projects, caps }: { client: NonNullable<ClientLike>; clients: Option[]; projects: Option[]; caps: Capabilities }) {
   const { open, setOpen, ref } = useMenu()
-  const [dialog, setDialog] = useState<null | 'edit' | 'meeting' | 'task' | 'invoice' | 'retainer'>(null)
+  const [dialog, setDialog] = useState<null | 'edit' | 'meeting' | 'task' | 'invoice' | 'retainer' | 'summary'>(null)
   const [, start] = useTransition()
   const toast = useToast()
   const pick = (d: typeof dialog) => { setOpen(false); setDialog(d) }
   return (
     <div className="client-actions">
-      <MessageMenu phone={client.phone} email={client.email} name={client.contactName ?? client.name} />
+      <MessageMenu clientId={client.id} phone={client.phone} email={client.email} name={client.contactName ?? client.name} caps={caps} />
       <div className="menu-wrap" ref={ref}>
         <button type="button" className="outline-button" aria-expanded={open} onClick={() => setOpen(o => !o)}>Más opciones</button>
         {open && (
           <div className="menu-pop" role="menu">
+            <button role="menuitem" onClick={() => pick('summary')}>✦ Resumen con IA</button>
             <button role="menuitem" onClick={() => pick('meeting')}>Agendar reunión</button>
             <button role="menuitem" onClick={() => pick('task')}>Nueva tarea</button>
             <button role="menuitem" onClick={() => pick('invoice')}>Registrar factura</button>
@@ -71,6 +76,7 @@ export function ClientActions({ client, clients, projects }: { client: NonNullab
       <TaskDialog clients={clients} projects={projects} clientId={client.id} open={dialog === 'task'} onOpenChange={o => setDialog(o ? 'task' : null)} />
       <InvoiceDialog clients={clients} clientId={client.id} open={dialog === 'invoice'} onOpenChange={o => setDialog(o ? 'invoice' : null)} />
       <RetainerDialog clientId={client.id} open={dialog === 'retainer'} onOpenChange={o => setDialog(o ? 'retainer' : null)} />
+      {dialog === 'summary' && <SummaryDialog open onClose={() => setDialog(null)} clientId={client.id} name={client.name} ai={caps.ai} />}
     </div>
   )
 }

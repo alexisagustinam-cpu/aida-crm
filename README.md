@@ -17,6 +17,18 @@ CRM interno de AIDA Digital Solutions. Next.js 16 + Neon (Postgres) + Neon Auth.
   - `POST /api/intake/lead`: formularios externos (la web) crean leads con la llave de Configuración.
   - `GET /api/export`: exporta todo en JSON o una tabla en CSV.
 
+## Integraciones, automatizaciones y API
+
+- **Configuración → Integraciones**: Claude, OpenAI, Gemini, WhatsApp (API de Meta), correo (Resend) y
+  n8n (webhook). Cada una se prueba contra el servicio al conectarla; las claves se guardan cifradas
+  (AES-256-GCM, llave de `INTEGRATIONS_KEY` o derivada de `NEON_AUTH_COOKIE_SECRET`).
+- **Automatizaciones** (`src/lib/crm/automations.ts`): cada ejecución queda en `automation_runs`
+  (correcta / error / omitida si falta la integración). La revisión diaria la dispara el cron de Vercel
+  (`vercel.json`, 12:00 UTC = 7:00 Ecuador) en `/api/cron/daily`, que exige `CRON_SECRET`.
+- **Servidor MCP** en `/api/mcp` y **API REST** en `/api/v1/*`, ambos con llaves de
+  Configuración → API y MCP (`Authorization: Bearer aida_…`).
+- Lógica compartida por la pantalla, MCP, API y formulario web: `src/lib/crm/core.ts`.
+
 ## Base de datos
 
 - Esquema: `src/db/schema.ts`. Migraciones SQL en `drizzle/` (`npm run db:generate` tras cambiar el esquema).

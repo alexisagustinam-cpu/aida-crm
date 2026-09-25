@@ -202,3 +202,35 @@ export const settings = pgTable('settings', {
   key: text('key').primaryKey(),
   value: jsonb('value').notNull(),
 })
+
+// Servicios externos conectados (WhatsApp, correo, n8n, IA…). `secret` va cifrado (ver lib/crm/secrets.ts).
+export const integrations = pgTable('integrations', {
+  key: text('key').primaryKey(),
+  secret: text('secret'),
+  settings: jsonb('settings').$type<Record<string, string>>().notNull().default({}),
+  status: text('status').notNull().default('connected'), // connected | error
+  lastError: text('last_error'),
+  connectedBy: text('connected_by'),
+  connectedAt: timestamp('connected_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Llaves para que otras herramientas (MCP, n8n, scripts) usen el CRM. Solo se guarda el hash.
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  prefix: text('prefix').notNull(),
+  hash: text('hash').notNull().unique(),
+  createdBy: text('created_by'),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revoked: boolean('revoked').notNull().default(false),
+  createdAt: createdAt(),
+})
+
+// Historial de cada ejecución de una automatización (para comprobar que corren de verdad).
+export const automationRuns = pgTable('automation_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  automationKey: text('automation_key').notNull(),
+  status: text('status').notNull(), // ok | error | skipped
+  detail: text('detail'),
+  createdAt: createdAt(),
+})

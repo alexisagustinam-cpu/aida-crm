@@ -1,60 +1,14 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { getDb, schema as s } from '@/db'
-import { requireMember, type Member } from '@/lib/auth/member'
-import { dayKey, formatMoney, todayKey } from './format'
-import { runAutomation, logActivity, notify } from './automations'
+import { formatMoney, todayKey } from './format'
+import { emitEvent, logActivity } from './automations'
+import { addClientNote, afterStageChange, createLead, createMeeting, markInvoicePaidCore, moveOpportunityTo, paymentReceived, setTaskDone } from './core'
 
-export type ActionState = { ok?: boolean; error?: string; message?: string } | null
-
-// ---------- utilidades ----------
-
-const str = (fd: FormData, k: string) => {
-  const v = fd.get(k)
-  return typeof v === 'string' && v.trim() ? v.trim() : null
-}
-const req = (fd: FormData, k: string, label: string) => {
-  const v = str(fd, k)
-  if (!v) throw new UserError(`Falta ${label}.`)
-  return v
-}
-// "14,500", "14500.50" o "$ 1.250" → centavos
-async function parseMoney(raw: string | null): Promise<number> {
-  if (!raw) return 0
-  const clean = raw.replace(/[^\d.,]/g, '')
-  const normalized = /,\d{1,2}$/.test(clean) ? clean.replace(/\./g, '').replace(',', '.') : clean.replace(/,/g, '')
-  const n = Number(normalized)
-  if (!Number.isFinite(n) || n < 0) throw new UserError('El monto no es válido.')
-  return Math.round(n * 100)
-}
-const bool = (fd: FormData, k: string) => fd.get(k) === 'on' || fd.get(k) === 'true'
-const int = (fd: FormData, k: string, min = 0, max = 100) => Math.min(max, Math.max(min, Math.round(Number(fd.get(k)) || 0)))
-// "2025-01-14" + "15:00" en hora de Ecuador → Date
-const localDateTime = (date: string, time: string | null) => new Date(`${date}T${time ?? '09:00'}:00-05:00`)
-
-class UserError extends Error {}
-
-function refresh() { revalidatePath('/', 'layout') }
-
-// Envuelve cada acción: exige sesión, traduce errores a un mensaje y refresca la vista.
-function action<A extends unknown[]>(fn: (member: Member, ...args: A) => Promise<ActionState | void>) {
-  return async (...args: A): Promise<ActionState> => {
-    const member = await requireMember()
-    try {
-      const result = await fn(member, ...args)
-      refresh()
-      return result ?? { ok: true }
-    } catch (error) {
-      if (error instanceof UserError) return { error: error.message }
-      if (typeof error === 'object' && error && 'digest' in error && String((error as { digest: unknown }).digest).startsWith('NEXT_REDIRECT')) throw error
-      console.error('crm/action:', error)
-      return { error: 'No se pudo guardar. Intenta de nuevo.' }
-    }
-  }
-}
+import { action, bool, int, localDateTime, parseMoney, req, str, UserError, type ActionState } from './action-helpers'
+export type { ActionState }
 
 // ---------- clientes ----------
 
@@ -73,6 +27,7 @@ export const createClient = action(async (member, fd: FormData) => {
   await db.insert(s.channels).values(['Website', 'WhatsApp', 'CRM', 'SEO'].map((name, position) => ({ clientId: client!.id, name, active: false, position })))
   if (fields.contactName) await db.insert(s.contacts).values({ clientId: client!.id, name: fields.contactName, email: fields.email, phone: fields.phone })
   await logActivity({ kind: 'client', title: 'Cliente nuevo', detail: fields.name, clientId: client!.id, actor: member.name })
+  await emitEvent('client.created', { id: client!.id, name: fields.name, industry: fields.industry, source: 'manual' })
   redirect(`/clientes/${client!.id}`)
 })
 
@@ -127,11 +82,7 @@ export const deleteContact = action(async (_member, id: string) => {
 })
 
 export const addNote = action(async (member, fd: FormData) => {
-  const db = await getDb()
-  const clientId = req(fd, 'clientId', 'el cliente')
-  const body = req(fd, 'body', 'el texto de la nota')
-  await db.insert(s.notes).values({ clientId, body, pinned: bool(fd, 'pinned'), author: member.name })
-  await logActivity({ kind: 'note', title: 'Nota agregada', detail: body.length > 70 ? `${body.slice(0, 70)}…` : body, clientId, actor: member.name })
+  await addClientNote(req(fd, 'clientId', 'el cliente'), req(fd, 'body', 'el texto de la nota'), bool(fd, 'pinned'), member.name)
 })
 
 export const toggleNotePin = action(async (_member, id: string) => {
@@ -180,78 +131,25 @@ function opportunityFields(fd: FormData) {
 }
 
 export const createOpportunity = action(async (member, fd: FormData) => {
-  const db = await getDb()
   const fields = opportunityFields(fd)
-  const valueCents = await parseMoney(str(fd, 'value'))
-  const [opp] = await db.insert(s.opportunities).values({ ...fields, valueCents, position: -1 }).returning()
-  await logActivity({ kind: 'lead', title: 'Nuevo lead agregado', detail: `${fields.company} entró al pipeline`, clientId: fields.clientId, actor: member.name })
-  await runAutomation('new_lead_notify', () => notify({ title: `Lead nuevo: ${fields.company}`, body: `${fields.service} · ${formatMoney(valueCents)}`, href: '/leads' }))
-  if (opp!.stage === 'Ganado') await onWon(opp!.id, member)
+  await createLead({ ...fields, valueCents: await parseMoney(str(fd, 'value')) }, member.name)
 })
 
 export const updateOpportunity = action(async (member, fd: FormData) => {
   const db = await getDb()
   const id = req(fd, 'id', 'la oportunidad')
   const [before] = await db.select().from(s.opportunities).where(eq(s.opportunities.id, id))
+  if (!before) throw new UserError('Esa oportunidad ya no existe.')
   const fields = opportunityFields(fd)
   const valueCents = await parseMoney(str(fd, 'value'))
-  const stageChanged = before && before.stage !== fields.stage
+  const stageChanged = before.stage !== fields.stage
   await db.update(s.opportunities).set({ ...fields, valueCents, ...(stageChanged ? { stageChangedAt: new Date() } : {}) }).where(eq(s.opportunities.id, id))
-  if (stageChanged) await afterStageChange(id, before.company, fields.stage, valueCents, member)
+  if (stageChanged) await afterStageChange({ ...before, valueCents }, fields.stage, member.name)
 })
 
 export const moveOpportunity = action(async (member, id: string, stage: string, beforeId: string | null) => {
-  const db = await getDb()
-  const [opp] = await db.select().from(s.opportunities).where(eq(s.opportunities.id, id))
-  if (!opp) return
-  // Reordena la columna destino dejando la tarjeta antes de `beforeId` (o al final)
-  const column = await db.select({ id: s.opportunities.id }).from(s.opportunities)
-    .where(and(eq(s.opportunities.stage, stage), sql`${s.opportunities.id} <> ${id}`)).orderBy(s.opportunities.position, sql`${s.opportunities.stageChangedAt} desc`)
-  const ids = column.map(c => c.id)
-  const at = beforeId ? ids.indexOf(beforeId) : -1
-  ids.splice(at < 0 ? ids.length : at, 0, id)
-  await Promise.all(ids.map((cid, position) => db.update(s.opportunities).set({ position }).where(eq(s.opportunities.id, cid))))
-  if (opp.stage !== stage) {
-    await db.update(s.opportunities).set({ stage, stageChangedAt: new Date() }).where(eq(s.opportunities.id, id))
-    await afterStageChange(id, opp.company, stage, opp.valueCents, member)
-  }
+  await moveOpportunityTo(id, stage, member.name, beforeId)
 })
-
-async function afterStageChange(id: string, company: string, stage: string, valueCents: number, member: Member) {
-  const titles: Record<string, [string, string]> = {
-    Contactado: ['lead', 'Lead contactado'], Reunión: ['meeting', 'Reunión en agenda'], Propuesta: ['proposal', 'Propuesta enviada'],
-    Ganado: ['project', 'Oportunidad ganada'], Perdido: ['lead', 'Oportunidad perdida'], Lead: ['lead', 'Volvió a Lead'],
-  }
-  const [kind, title] = titles[stage] ?? ['lead', `Pasó a ${stage}`]
-  await logActivity({ kind, title, detail: `${company} · ${formatMoney(valueCents)}`, actor: member.name })
-  if (stage === 'Ganado') await onWon(id, member)
-}
-
-// Automatización: oportunidad ganada → cliente + tarea de bienvenida
-async function onWon(id: string, member: Member) {
-  await runAutomation('won_to_client', async () => {
-    const db = await getDb()
-    const [opp] = await db.select().from(s.opportunities).where(eq(s.opportunities.id, id))
-    if (!opp) return
-    let clientId = opp.clientId
-    if (!clientId) {
-      const [existing] = await db.select({ id: s.clients.id }).from(s.clients).where(sql`lower(${s.clients.name}) = lower(${opp.company})`)
-      clientId = existing?.id ?? null
-    }
-    if (!clientId) {
-      const [c] = await db.insert(s.clients).values({ name: opp.company, status: 'Activo', contactName: opp.contactName, email: opp.email, phone: opp.phone, owner: member.name, clientSince: todayKey() }).returning({ id: s.clients.id })
-      clientId = c!.id
-      await db.insert(s.channels).values(['Website', 'WhatsApp', 'CRM', 'SEO'].map((name, position) => ({ clientId: clientId!, name, active: false, position })))
-      if (opp.contactName) await db.insert(s.contacts).values({ clientId, name: opp.contactName, email: opp.email, phone: opp.phone })
-      await logActivity({ kind: 'client', title: 'Cliente nuevo', detail: `${opp.company} (desde el pipeline)`, clientId, actor: member.name })
-    } else {
-      await db.update(s.clients).set({ status: 'Activo', archived: false }).where(eq(s.clients.id, clientId))
-    }
-    await db.update(s.opportunities).set({ clientId }).where(eq(s.opportunities.id, id))
-    await db.insert(s.tasks).values({ title: `Bienvenida y kickoff con ${opp.company}`, priority: 'Alta', dueDate: dayKey(new Date(Date.now() + 2 * 86_400_000)), clientId, assignee: member.name })
-    await notify({ title: `¡Ganamos ${opp.company}!`, body: `${opp.service} · ${formatMoney(opp.valueCents)}`, href: `/clientes/${clientId}` })
-  })
-}
 
 export const deleteOpportunity = action(async (_member, id: string) => {
   const db = await getDb()
@@ -319,11 +217,8 @@ export const saveTask = action(async (member, fd: FormData) => {
 
 export const toggleTask = action(async (member, id: string) => {
   const db = await getDb()
-  const [t] = await db.select().from(s.tasks).where(eq(s.tasks.id, id))
-  if (!t) return
-  const done = !t.done
-  await db.update(s.tasks).set({ done, completedAt: done ? new Date() : null }).where(eq(s.tasks.id, id))
-  if (done) await logActivity({ kind: 'task', title: 'Tarea completada', detail: t.title, clientId: t.clientId, actor: member.name })
+  const [t] = await db.select({ done: s.tasks.done }).from(s.tasks).where(eq(s.tasks.id, id))
+  if (t) await setTaskDone(id, !t.done, member.name)
 })
 
 export const deleteTask = action(async (_member, id: string) => {
@@ -338,19 +233,9 @@ export const saveMeeting = action(async (member, fd: FormData) => {
   const id = str(fd, 'id')
   const link = str(fd, 'link')
   if (link && !/^https?:\/\//i.test(link)) throw new UserError('El enlace debe empezar con https://')
-  const startsAt = localDateTime(req(fd, 'date', 'la fecha'), str(fd, 'time'))
-  const values = { title: req(fd, 'title', 'el título'), startsAt, location: str(fd, 'location'), link, clientId: str(fd, 'clientId') }
-  if (id) {
-    await db.update(s.meetings).set(values).where(eq(s.meetings.id, id))
-    return
-  }
-  await db.insert(s.meetings).values(values)
-  const clientName = values.clientId ? (await db.select({ name: s.clients.name }).from(s.clients).where(eq(s.clients.id, values.clientId)))[0]?.name : null
-  await logActivity({ kind: 'meeting', title: 'Reunión programada', detail: clientName ? `${values.title} con ${clientName}` : values.title, clientId: values.clientId, actor: member.name })
-  if (values.clientId) await runAutomation('meeting_prep_task', async () => {
-    const dayBefore = dayKey(new Date(startsAt.getTime() - 86_400_000))
-    await db.insert(s.tasks).values({ title: `Preparar: ${values.title}`, priority: 'Media', dueDate: dayBefore < todayKey() ? todayKey() : dayBefore, clientId: values.clientId, assignee: member.name })
-  })
+  const values = { title: req(fd, 'title', 'el título'), startsAt: localDateTime(req(fd, 'date', 'la fecha'), str(fd, 'time')), location: str(fd, 'location'), link, clientId: str(fd, 'clientId') }
+  if (id) await db.update(s.meetings).set(values).where(eq(s.meetings.id, id))
+  else await createMeeting(values, member.name)
 })
 
 export const deleteMeeting = action(async (_member, id: string) => {
@@ -369,21 +254,14 @@ export const createInvoice = action(async (member, fd: FormData) => {
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int + 1` }).from(s.invoices)
   const number = str(fd, 'number') ?? `A${String(n).padStart(4, '0')}`
   await db.insert(s.invoices).values({ clientId, number, concept: str(fd, 'concept'), amountCents, issuedOn: str(fd, 'issuedOn') ?? todayKey(), status, paidOn: status === 'Pagado' ? todayKey() : null })
+  const [inv] = await db.select().from(s.invoices).where(and(eq(s.invoices.clientId, clientId), eq(s.invoices.number, number)))
   await logActivity({ kind: 'payment', title: 'Factura emitida', detail: `Invoice #${number} · ${formatMoney(amountCents)}`, clientId, actor: member.name })
-  if (status === 'Pagado') await paymentAutomation(clientId, number, amountCents, member)
+  if (status === 'Pagado' && inv) await paymentReceived(inv, member.name)
 })
 
 export const markInvoicePaid = action(async (member, id: string) => {
-  const db = await getDb()
-  const [inv] = await db.update(s.invoices).set({ status: 'Pagado', paidOn: todayKey() }).where(eq(s.invoices.id, id)).returning()
-  if (inv) await paymentAutomation(inv.clientId, inv.number, inv.amountCents, member)
+  await markInvoicePaidCore(id, member.name)
 })
-
-async function paymentAutomation(clientId: string, number: string, amountCents: number, member: Member) {
-  await runAutomation('payment_activity', async () => {
-    await logActivity({ kind: 'payment', title: 'Pago registrado', detail: `Invoice #${number} marcada como pagada · ${formatMoney(amountCents)}`, clientId, actor: member.name })
-  })
-}
 
 export const deleteInvoice = action(async (_member, id: string) => {
   const db = await getDb()

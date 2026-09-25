@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getDb, schema as s } from '@/db'
 import { getSetting } from '@/lib/crm/queries'
-import { logActivity, notify, runAutomation } from '@/lib/crm/automations'
+import { createLead } from '@/lib/crm/core'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,12 +35,9 @@ export async function POST(request: Request) {
   if (!company) return NextResponse.json({ error: 'Falta el nombre o la empresa' }, { status: 400, headers })
   const service = clean(body.service ?? body.servicio) ?? 'Por definir'
   const message = clean(body.message ?? body.mensaje, 1000)
-  const db = await getDb()
-  const [opp] = await db.insert(s.opportunities).values({
-    company, service, stage: 'Lead', source: clean(body.source ?? body.origen) ?? 'Web', position: -1,
+  const opp = await createLead({
+    company, service, source: clean(body.source ?? body.origen) ?? 'Web', message,
     contactName, email: clean(body.email ?? body.correo), phone: clean(body.phone ?? body.telefono),
-  }).returning({ id: s.opportunities.id })
-  await logActivity({ kind: 'lead', title: 'Nuevo lead desde la web', detail: message ? `${company}: ${message.slice(0, 80)}` : `${company} entró al pipeline`, actor: 'Formulario web' })
-  await runAutomation('new_lead_notify', () => notify({ title: `Lead nuevo desde la web: ${company}`, body: message ?? service, href: '/leads' }))
-  return NextResponse.json({ ok: true, id: opp!.id }, { status: 201, headers })
+  }, 'Formulario web')
+  return NextResponse.json({ ok: true, id: opp.id }, { status: 201, headers })
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import * as A from '@/lib/crm/actions'
 import { getClientDetail, getClientOptions, getProjectOptions } from '@/lib/crm/queries'
+import { listIntegrations } from '@/lib/crm/integrations'
 import { formatAgo, formatDue, formatLongDate, formatMoney, formatShortDate, formatTime, isOverdue, monthLabel, signed } from '@/lib/crm/format'
 import { ACTIVITY_COLORS } from '@/lib/crm/constants'
 import { SetCrumb } from '@/components/crm/shell'
@@ -28,7 +29,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const { tab: rawTab } = await searchParams
   const tab: Tab = (TABS.find(t => t[0] === rawTab)?.[0]) ?? 'resumen'
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
-  const [d, clients, projectOptions] = await Promise.all([getClientDetail(id), getClientOptions(), getProjectOptions()])
+  const [d, clients, projectOptions, integrations] = await Promise.all([getClientDetail(id), getClientOptions(), getProjectOptions(), listIntegrations()])
+  const caps = { whatsapp: !!integrations.items.whatsapp, email: !!integrations.items.email, ai: integrations.aiDefault }
   if (!d) notFound()
   const { client: c } = d
   const since = c.clientSince ? monthLabel(`${c.clientSince}T12:00:00`) + ' ' + c.clientSince.slice(0, 4) : '—'
@@ -258,7 +260,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             <p>{[c.category, c.industry, c.location].filter(Boolean).join(' | ')}</p>
             <p>{c.description}</p>
           </div>
-          <ClientActions client={c} clients={clients} projects={projectOptions} />
+          <ClientActions client={c} clients={clients} projects={projectOptions} caps={caps} />
         </div>
         <div className="client-meta">
           <div><small>Cliente desde</small><b>{since}</b></div>

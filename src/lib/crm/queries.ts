@@ -278,6 +278,12 @@ export async function getAutomations() {
   return db.select().from(s.automations).orderBy(asc(s.automations.name))
 }
 
+export async function getAutomationRuns(limit = 40) {
+  const db = await getDb()
+  return db.select({ ...getTableColumns(s.automationRuns), name: s.automations.name }).from(s.automationRuns)
+    .leftJoin(s.automations, eq(s.automations.key, s.automationRuns.automationKey)).orderBy(desc(s.automationRuns.createdAt)).limit(limit)
+}
+
 export async function getNotifications(memberId: string, limit = 12) {
   const db = await getDb()
   const rows = await db.select().from(s.notifications).orderBy(desc(s.notifications.createdAt)).limit(limit)
