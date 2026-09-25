@@ -11,7 +11,11 @@ export async function login(formData: FormData) {
   const parsed = values(formData)
   if (!parsed.success) redirect('/login?error=Credenciales+inválidas')
   const { error } = await auth.signIn.email(parsed.data)
-  if (error) redirect('/login?error=No+se+pudo+iniciar+sesión')
+  if (error) {
+    // El detalle va al log del servidor (Vercel → Logs), no a la pantalla.
+    console.error('auth/login:', error.code ?? '', error.message)
+    redirect('/login?error=No+se+pudo+iniciar+sesión')
+  }
   redirect('/dashboard')
 }
 
@@ -23,7 +27,10 @@ export async function signup(formData: FormData) {
   // podrá editar más adelante desde Configuración del equipo.
   const name = parsed.data.email.split('@')[0]
   const { error } = await auth.signUp.email({ ...parsed.data, name })
-  if (error) redirect('/signup?error=No+se+pudo+crear+la+cuenta')
+  if (error) {
+    console.error('auth/signup:', error.code ?? '', error.message)
+    redirect('/signup?error=No+se+pudo+crear+la+cuenta')
+  }
   redirect('/login?message=Cuenta+creada.+Ya+puedes+iniciar+sesión')
 }
 
