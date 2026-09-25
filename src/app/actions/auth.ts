@@ -33,8 +33,3 @@ export async function signup(formData: FormData) {
   }
   redirect('/login?message=Cuenta+creada.+Ya+puedes+iniciar+sesión')
 }
-
-export async function logout() {
-  await auth.signOut()
-  redirect('/login')
-}

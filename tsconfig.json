@@ -37,7 +37,6 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules",
-    "_pending-drizzle-port"
+    "node_modules"
   ]
 }

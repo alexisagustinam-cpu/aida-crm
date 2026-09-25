@@ -2,15 +2,17 @@
 
 CRM interno de AIDA Digital Solutions. Next.js 16 + Neon (Postgres) + Neon Auth.
 
-## Estado: checkpoint 1
+## Estado
 
-- ✅ Login, registro y sesión funcionando con Neon Auth (`/login`, `/signup`, `/dashboard`).
-- ✅ Rutas protegidas: sin sesión, todo redirige a `/login`.
-- ⏳ Los módulos del CRM (leads, pipeline, clientes, finanzas, proyectos…) están en
-  `_pending-drizzle-port/`: es el código original (Supabase + su propio traductor de
-  consultas), pendiente de reescribirse sobre Drizzle + Postgres puro, módulo por módulo.
-- ⏳ Diseño visual: por ahora usa el tema genérico del proyecto base. Falta aplicar el
-  diseño ya construido para AIDA.
+- ✅ Login, registro, Google y sesión con Neon Auth (`/login`, `/signup`).
+- ✅ `/dashboard` es el CRM de AIDA: la maqueta original (dashboard, clientes, ficha de
+  Selfie Dental, configuración), servida tal cual y solo con sesión iniciada.
+  - Vista: `src/lib/crm/page-html.ts` + `public/crm/` (estilos, script, imágenes).
+  - Datos: se guardan en Neon, tabla `crm_workspace`, como un solo documento JSON
+    compartido por el equipo (`src/lib/crm/store.ts`, API en `/api/crm`). La primera
+    carga siembra la base con los datos de ejemplo de la maqueta.
+- ⏳ Módulos que en la maqueta aún están vacíos (Leads, Pipeline completo, Proyectos,
+  Tareas, Automatizaciones, Reportes) y métricas que siguen siendo de demostración.
 
 ## Desarrollo local
 
