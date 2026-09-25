@@ -5,10 +5,16 @@ import { auth } from '@/lib/auth/server'
 // antiguo middleware.ts / export "middleware"). Ver AGENTS.md.
 const protectedRoutes = auth.middleware({ loginUrl: '/login' })
 
+// El middleware de Neon ya deja pasar su propio loginUrl (/login), pero sus
+// rutas públicas por defecto son las suyas (/auth/sign-up…), no /signup:
+// sin esta excepción, crear cuenta redirige siempre a /login.
+const PUBLIC_PATHS = ['/signup']
+
 export async function proxy(request: NextRequest) {
   // Las Server Actions viajan como POST con esta cabecera: dejarlas pasar
   // sin redirigir evita romper los formularios de login/signup.
   if (request.headers.has('Next-Action')) return
+  if (PUBLIC_PATHS.includes(request.nextUrl.pathname)) return
   return protectedRoutes(request)
 }
 
