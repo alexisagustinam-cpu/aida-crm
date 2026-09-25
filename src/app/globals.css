@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-surface-elevated: var(--brand-surface-elevated);
+  --color-brand-border: var(--brand-border);
+  --color-brand-text: var(--brand-text);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-success: var(--brand-success);
+  --color-brand-warning: var(--brand-warning);
+  --color-brand-danger: var(--brand-danger);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-jetbrains);
+}
+
+:root {
+  --brand-bg: #f2efe9;
+  --brand-surface: #e6e1d6;
+  --brand-surface-elevated: #fffdf8;
+  --brand-border: rgb(20 19 17 / 16%);
+  --brand-text: #141311;
+  --brand-muted: #6f6b64;
+  --brand-primary: #ff4d00;
+  --brand-accent: #a3e635;
+  --brand-success: #4d7c0f;
+  --brand-warning: #b45309;
+  --brand-danger: #b42318;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--brand-bg); }
+body { min-height: 100dvh; background: var(--brand-bg); color: var(--brand-text); font-family: var(--font-archivo), Arial, sans-serif; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+::selection { background: var(--brand-primary); color: var(--brand-bg); }
+*:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+
+.product-grid {
+  background-image: linear-gradient(rgb(20 19 17 / 5%) 1px, transparent 1px), linear-gradient(90deg, rgb(20 19 17 / 5%) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.mono { font-family: var(--font-jetbrains), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.wordmark-labs { font-family: var(--font-instrument), Georgia, serif; font-style: italic; font-weight: 400; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

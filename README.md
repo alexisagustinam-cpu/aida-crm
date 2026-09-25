@@ -1,17 +1,31 @@
-# AIDA OS
+# AIDA CRM
 
-Static, client-side CRM for a small agency. It manages clients, opportunities and tasks; calculates the overview from the records you enter; supports search, record details, JSON export/import and workspace clearing.
+CRM interno de AIDA Digital Solutions. Next.js 16 + Neon (Postgres) + Neon Auth.
 
-All information stays in the browser's `localStorage` under the current browser profile. It is not sent to a server.
+## Estado: checkpoint 1
 
-## Run locally
+- ✅ Login, registro y sesión funcionando con Neon Auth (`/login`, `/signup`, `/dashboard`).
+- ✅ Rutas protegidas: sin sesión, todo redirige a `/login`.
+- ⏳ Los módulos del CRM (leads, pipeline, clientes, finanzas, proyectos…) están en
+  `_pending-drizzle-port/`: es el código original (Supabase + su propio traductor de
+  consultas), pendiente de reescribirse sobre Drizzle + Postgres puro, módulo por módulo.
+- ⏳ Diseño visual: por ahora usa el tema genérico del proyecto base. Falta aplicar el
+  diseño ya construido para AIDA.
+
+## Desarrollo local
 
 ```bash
-python3 -m http.server 4173
+npm install
+vercel env pull .env.local --environment=production --yes
+npm run dev
 ```
 
-Open `http://localhost:4173`.
+Nota: `vercel env pull` puede devolver las variables sensibles vacías según los permisos
+del equipo en Vercel; si pasa eso, pruébalo directo contra el deploy en Vercel en vez de
+en local.
 
-## Production note
+## Variables de entorno
 
-This is intentionally a local single-user workspace. Multi-user access, authentication, backups, permissions, cloud storage, or using it for real client operations require a secure backend before production use.
+Provistas automáticamente por la integración de Neon en Vercel:
+`DATABASE_URL`, `NEON_AUTH_BASE_URL`. `NEON_AUTH_COOKIE_SECRET` se generó y cargó aparte
+(no viene de la integración).

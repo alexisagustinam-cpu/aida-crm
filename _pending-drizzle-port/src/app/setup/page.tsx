@@ -1,0 +1,6 @@
+import { ActionSubmitButton } from '@/components/ui/action-submit-button'
+import { ActionFeedbackForm } from '@/components/ui/action-feedback-form'
+import { createAutomaiOrganization } from '@/app/actions/organization'
+import { getOrganizationContext } from '@/lib/supabase/context'
+import { redirect } from 'next/navigation'
+export default async function SetupPage() { const { organizationId } = await getOrganizationContext(); if (organizationId) redirect('/dashboard'); return <main className="product-grid grid min-h-[100dvh] place-items-center p-5"><section className="max-w-xl border border-brand-border bg-brand-surface-elevated p-8"><p className="mono text-xs uppercase tracking-[.16em] text-brand-primary">AutomAI Labs / onboarding</p><h1 className="mt-3 text-4xl font-bold tracking-[-.065em]">Crea tu espacio interno.</h1><p className="mt-5 leading-7 text-brand-muted">Se configurará AutomAI Labs, su pipeline comercial y las fuentes de prospectos. No se crearán registros de ejemplo.</p><ActionFeedbackForm action={createAutomaiOrganization} successMessage="Espacio creado correctamente" className="mt-8"><ActionSubmitButton className="bg-brand-text px-5 py-3 font-medium text-brand-bg hover:bg-brand-primary">Crear AutomAI Labs</ActionSubmitButton></ActionFeedbackForm></section></main> }
