@@ -1,4 +1,5 @@
 /* Ajustes del CRM sobre la maqueta original: logo, menú plegable, cambio de tema y gráficos */
+:root{font-family:var(--font-jakarta),"Plus Jakarta Sans",sans-serif}
 
 /* Logo: más grande y con versión para cada tema */
 .side-top{gap:8px;padding:0 6px 0 10px;min-height:56px}
@@ -18,7 +19,6 @@ html:not([data-theme=light]) .logo-light,html[data-theme=light] .logo-dark{displ
   html[data-sidebar=collapsed] .side-top{flex-direction:column;padding:0;gap:14px}
   html[data-sidebar=collapsed] .brand-logo{display:none!important}
   html[data-sidebar=collapsed] .brand-mark{display:block}
-  html[data-sidebar=collapsed] html:not([data-theme=light]) .brand-mark.logo-light{display:none}
   html[data-sidebar=collapsed] .collapse-btn svg{transform:rotate(180deg)}
   html[data-sidebar=collapsed] .nav-link{justify-content:center;padding:0;gap:0}
   html[data-sidebar=collapsed] .nav-link span,html[data-sidebar=collapsed] .brand-callout,html[data-sidebar=collapsed] .operator span,html[data-sidebar=collapsed] .more-btn{display:none}
