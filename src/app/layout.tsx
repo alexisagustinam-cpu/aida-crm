@@ -7,8 +7,8 @@ const instrument = Instrument_Serif({ subsets: ['latin'], variable: '--font-inst
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', weight: ['400', '500'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'AutomAI Labs - CRM OS',
-  description: 'Sistema operativo comercial y administrativo interno de AutomAI Labs.',
+  title: 'AIDA · CRM',
+  description: 'CRM interno de AIDA Digital Solutions.',
   robots: { index: false, follow: false },
 }
 

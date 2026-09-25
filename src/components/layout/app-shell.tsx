@@ -105,7 +105,7 @@ export function AppShell({ children }: AppShellProps) {
             <Search size={15} strokeWidth={1.7} className="text-zinc-400 transition-colors group-hover:text-zinc-100" /><span className="hidden flex-1 truncate sm:inline">Buscar en el CRM</span><kbd className="mono ml-auto hidden border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400 md:inline">⌘ K</kbd>
           </button>
           <Link href="/notifications" aria-label="Notificaciones" className="grid size-10 place-items-center rounded-full border border-brand-border text-brand-muted transition-colors hover:border-brand-text hover:text-brand-text"><Bell size={16} strokeWidth={1.7} /></Link>
-          <span className="mono hidden text-xs text-brand-muted sm:inline">AUTOMAI / INTERNAL</span>
+          <span className="mono hidden text-xs text-brand-muted sm:inline">AIDA / INTERNO</span>
         </header>
         {mobileNavigationOpen && <div className="fixed inset-x-0 top-[72px] z-40 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-brand-border bg-brand-surface-elevated p-4 lg:hidden"><nav aria-label="Navegación móvil"><div className="grid gap-1">{navigation.flatMap((group) => group.items).map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMobileNavigationOpen(false)} className="flex items-center gap-3 rounded-[8px] px-3 py-3 text-sm text-brand-text hover:bg-brand-surface"><Icon size={16} />{label}</Link>)}<Link href="/settings" onClick={() => setMobileNavigationOpen(false)} className="flex items-center gap-3 rounded-[8px] px-3 py-3 text-sm text-brand-text hover:bg-brand-surface"><Settings size={16} />Configuración</Link></div></nav></div>}
         <main>{children}</main>
