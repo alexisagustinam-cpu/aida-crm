@@ -18,4 +18,4 @@ export async function proxy(request: NextRequest) {
   return protectedRoutes(request)
 }
 
-export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth).*)'] }
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|apple-icon.png|brand/|api/auth).*)'] }

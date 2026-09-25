@@ -9,7 +9,7 @@ type ActionSubmitButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variants = {
-  primary: 'bg-brand-text text-brand-bg hover:bg-brand-primary',
+  primary: 'bg-brand-primary text-white hover:bg-brand-navy',
   secondary: 'border border-brand-border bg-brand-surface-elevated text-brand-text hover:border-brand-text',
   danger: 'bg-red-700 text-white hover:bg-red-800',
 }
