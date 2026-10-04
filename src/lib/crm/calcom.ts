@@ -79,11 +79,9 @@ export async function applyBooking(b: CalBooking, opts: { ownerEmail?: string; f
     return 'cancelada'
   }
 
-  if (existing) {
-    if (existing.startsAt.getTime() === startsAt.getTime() && existing.link === link) return 'sin cambios'
-    await db.update(s.meetings).set({ startsAt, link, location: where(b) }).where(eq(s.meetings.id, existing.id))
-    return 'actualizada'
-  }
+  // Ya está en el CRM: no se toca. Si alguien la editó a mano en el CRM, la sincronización no
+  // la regresa a la fecha de Cal.com (cuando Cal.com reprograma, crea otra reserva; ver abajo).
+  if (existing) return 'sin cambios'
 
   // Reprogramada: Cal.com crea una reserva nueva; se mueve la reunión que ya existía.
   const fromUid = b.rescheduledFromUid ?? opts.fromUid
