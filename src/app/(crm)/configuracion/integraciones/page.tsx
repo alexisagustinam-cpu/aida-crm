@@ -9,6 +9,7 @@ export default async function IntegrationsPage() {
   const groups = [
     { title: 'Inteligencia artificial', text: 'Conecta una o varias; la predeterminada es la que usa el CRM para redactar mensajes y resumir clientes. Cada llave se prueba contra el servicio antes de guardarse y queda cifrada.', keys: ['claude', 'openai', 'gemini'] },
     { title: 'Mensajería', text: 'Para enviar WhatsApp y correos desde el CRM. Sin conectarlas, los botones siguen abriendo WhatsApp y tu correo con el mensaje listo.', keys: ['whatsapp', 'email'] },
+    { title: 'Citas', text: 'Las reservas del diagnóstico gratuito en Cal.com entran solas como reuniones, pegadas a su lead. Cada mañana el CRM vuelve a revisar Cal.com por si alguna no llegó.', keys: ['calcom'] },
     { title: 'Automatización', text: 'n8n recibe los eventos del CRM. Para que n8n (o Claude) lean y creen datos en el CRM, usa una llave de “API y MCP”.', keys: ['n8n'] },
   ]
   return <>

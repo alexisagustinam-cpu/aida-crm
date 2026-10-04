@@ -32,6 +32,7 @@ export function IntegrationCard({ def, state, aiDefault, isAdmin }: { def: Def; 
             {def.key === 'whatsapp' && <>Número: {state.settings.display || state.settings.phoneNumberId} · </>}
             {def.key === 'email' && <>Envía como {state.settings.from} · </>}
             {def.key === 'n8n' && <>Webhook: {state.settings.url} · </>}
+            {def.key === 'calcom' && <>cal.com/{state.settings.account} · {state.settings.webhook ? 'Aviso automático activo' : 'Sin aviso automático (solo sincronización)'} · </>}
             Conectado por {state.connectedBy ?? '—'}
           </p>
           {state.status === 'error' && state.lastError && <p className="form-error" style={{ margin: '8px 0 0' }}>Último error: {state.lastError}</p>}
@@ -47,7 +48,7 @@ export function IntegrationCard({ def, state, aiDefault, isAdmin }: { def: Def; 
           )}
           {def.key === 'n8n' && state.signingSecret && <p className="muted-text" style={{ marginTop: 8 }}>Cada envío lleva la cabecera <code>x-aida-signature: sha256=…</code> (HMAC con el secreto <code>{state.signingSecret.slice(0, 6)}…</code>) para que n8n verifique que viene del CRM.</p>}
           <div className="page-actions" style={{ marginTop: 12 }}>
-            <button type="button" className="outline-button" disabled={pending} onClick={() => run(() => I.testIntegrationAction(def.key))}>{pending ? 'Probando…' : 'Probar'}</button>
+            <button type="button" className="outline-button" disabled={pending} onClick={() => run(() => I.testIntegrationAction(def.key))}>{pending ? (def.key === 'calcom' ? 'Sincronizando…' : 'Probando…') : def.key === 'calcom' ? 'Sincronizar ahora' : 'Probar'}</button>
             {isAdmin && <button type="button" className="quiet-button" onClick={() => setEditing(e => !e)}>{editing ? 'Cancelar' : 'Cambiar datos'}</button>}
             {isAdmin && <button type="button" className="quiet-button danger-text" disabled={pending} onClick={() => { if (window.confirm(`¿Desconectar ${def.name}?`)) run(() => I.disconnectAction(def.key), 'Desconectado.') }}>Desconectar</button>}
           </div>

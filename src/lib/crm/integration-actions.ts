@@ -6,9 +6,10 @@ import { connectIntegration, disconnect, aiComplete, sendEmail, sendWebhookEvent
 import { createApiKey, revokeApiKey } from './api-keys'
 import { logActivity, runDailyChecks } from './automations'
 import { getClientDetail } from './queries'
+import { syncCalcom } from './calcom'
 import { formatLongDate, formatMoney } from './format'
 
-const KEYS: IntegrationKey[] = ['whatsapp', 'email', 'n8n', 'claude', 'openai', 'gemini']
+const KEYS: IntegrationKey[] = ['whatsapp', 'email', 'n8n', 'claude', 'openai', 'gemini', 'calcom']
 const AI: AiKey[] = ['claude', 'openai', 'gemini']
 const adminOnly = (role: string) => { if (role !== 'Administrador') throw new UserError('Solo un administrador puede cambiar las integraciones.') }
 
@@ -20,6 +21,7 @@ export const connectAction = action(async (member, fd: FormData): Promise<Action
   if (!KEYS.includes(key)) throw new UserError('Integración desconocida.')
   const input = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : null]))
   const message = await connectIntegration(key, input, { name: member.name, email: member.email })
+  if (key === 'calcom') return { ok: true, message: `${message} ${syncMessage(await syncCalcom())}` }
   return { ok: true, message }
 })
 
@@ -50,9 +52,19 @@ export const testIntegrationAction = action(async (member, key: IntegrationKey):
       const r = await aiComplete('Responde en una sola frase corta, en español.', 'Saluda al equipo de AIDA Digital Solutions.')
       return { ok: true, message: `${r.model}: “${r.text.slice(0, 160)}”` }
     }
+    case 'calcom': {
+      const r = await syncCalcom()
+      if (r.error) throw new UserError(`No se pudo sincronizar con Cal.com: ${r.error}`)
+      return { ok: true, message: syncMessage(r) }
+    }
     case 'whatsapp': return { ok: true, message: 'WhatsApp está conectado. Pruébalo enviando un mensaje desde la ficha de un cliente.' }
   }
 })
+
+function syncMessage(r: Awaited<ReturnType<typeof syncCalcom>>) {
+  if (r.error) return `La sincronización falló: ${r.error}`
+  return `Revisé ${r.total} ${r.total === 1 ? 'reserva' : 'reservas'}: ${r.nueva} ${r.nueva === 1 ? 'cita nueva' : 'citas nuevas'}, ${r.actualizada} actualizadas, ${r.cancelada} canceladas.`
+}
 
 // ---------- llaves de API (MCP y n8n) ----------
 

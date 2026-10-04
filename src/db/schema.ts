@@ -124,6 +124,8 @@ export const meetings = pgTable('meetings', {
   location: text('location'), // "Google Meet", dirección…
   link: text('link'),
   clientId: uuid('client_id').references(() => clients.id, { onDelete: 'cascade' }),
+  opportunityId: uuid('opportunity_id').references(() => opportunities.id, { onDelete: 'set null' }),
+  externalId: text('external_id').unique(), // uid de la reserva en Cal.com; evita duplicados al sincronizar
   createdAt: createdAt(),
 })
 

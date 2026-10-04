@@ -8,7 +8,7 @@ const protectedRoutes = auth.middleware({ loginUrl: '/login' })
 // El middleware de Neon ya deja pasar su propio loginUrl (/login), pero sus
 // rutas públicas por defecto son las suyas (/auth/sign-up…), no /signup:
 // sin esta excepción, crear cuenta redirige siempre a /login.
-const PUBLIC_PATHS = ['/signup', '/api/intake/lead', '/api/cron/daily']
+const PUBLIC_PATHS = ['/signup', '/api/intake/lead', '/api/intake/calcom', '/api/cron/daily']
 // Rutas con su propia autenticación por llave (MCP y API para n8n)
 const PUBLIC_PREFIXES = ['/api/mcp', '/api/v1/']
 

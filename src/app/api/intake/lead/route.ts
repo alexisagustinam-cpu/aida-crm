@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSetting } from '@/lib/crm/queries'
 import { createLead } from '@/lib/crm/core'
+import { findOpenLead } from '@/lib/crm/calcom'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,9 +36,13 @@ export async function POST(request: Request) {
   if (!company) return NextResponse.json({ error: 'Falta el nombre o la empresa' }, { status: 400, headers })
   const service = clean(body.service ?? body.servicio) ?? 'Por definir'
   const message = clean(body.message ?? body.mensaje, 1000)
+  const email = clean(body.email ?? body.correo), phone = clean(body.phone ?? body.telefono)
+  // Si la misma persona vuelve a enviar el formulario, no se duplica el lead.
+  const open = await findOpenLead(email, phone)
+  if (open) return NextResponse.json({ ok: true, id: open.id, existente: true }, { status: 200, headers })
   const opp = await createLead({
     company, service, source: clean(body.source ?? body.origen) ?? 'Web', message,
-    contactName, email: clean(body.email ?? body.correo), phone: clean(body.phone ?? body.telefono),
+    contactName, email, phone,
   }, 'Formulario web')
   return NextResponse.json({ ok: true, id: opp.id }, { status: 201, headers })
 }

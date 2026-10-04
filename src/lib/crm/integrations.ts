@@ -7,7 +7,7 @@ import { CLAUDE_DEFAULT_MODEL, claudeComplete, claudeModels } from './ai/claude'
 import { openaiComplete, openaiModels } from './ai/openai'
 import { geminiComplete, geminiModels } from './ai/gemini'
 
-export type IntegrationKey = 'whatsapp' | 'email' | 'n8n' | 'claude' | 'openai' | 'gemini'
+export type IntegrationKey = 'whatsapp' | 'email' | 'n8n' | 'claude' | 'openai' | 'gemini' | 'calcom'
 export const AI_KEYS = ['claude', 'openai', 'gemini'] as const
 export type AiKey = (typeof AI_KEYS)[number]
 
@@ -47,6 +47,11 @@ async function save(key: IntegrationKey, secrets: Secrets, settings: Settings, b
 
 export async function disconnect(key: IntegrationKey) {
   const db = await getDb()
+  if (key === 'calcom') {
+    // Quita el aviso que el CRM creó en Cal.com; si falla, igual se desconecta.
+    const row = await getIntegration('calcom')
+    if (row?.secrets.webhookId) await calApi(row.secrets.apiKey!, `/webhooks/${row.secrets.webhookId}`, { method: 'DELETE' }).catch(() => {})
+  }
   await db.delete(s.integrations).where(eq(s.integrations.key, key))
   const [def] = await db.select().from(s.settings).where(eq(s.settings.key, 'ai_default'))
   if (def?.value === key) await db.delete(s.settings).where(eq(s.settings.key, 'ai_default'))
@@ -88,6 +93,25 @@ export async function connectIntegration(key: IntegrationKey, input: Record<stri
       if (!res.ok) throw new IntegrationError(`El webhook respondió ${res.status}. Revisa que el flujo de n8n esté activo.`)
       await save(key, { signingSecret }, { url }, member.name)
       return 'Conectado. n8n recibió un evento de prueba (crm.test).'
+    }
+    case 'calcom': {
+      const apiKey = need(input.apiKey, 'la API key de Cal.com')
+      const me = await calApi<{ email: string; username: string }>(apiKey, '/me').catch(e => { throw new IntegrationError(`Cal.com rechazó la llave: ${(e as Error).message}`) })
+      const existing = await getIntegration('calcom')
+      const webhookSecret = existing?.secrets.webhookSecret ?? randomToken(24)
+      // En producción, el CRM crea él mismo el aviso en Cal.com (reserva, cambio y cancelación).
+      // En local no hay URL pública: las citas entran con "Sincronizar ahora" y la revisión diaria.
+      const base = process.env.APP_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+      let webhookId = '', webhook = ''
+      if (base) {
+        webhook = `${base}/api/intake/calcom`
+        const hooks = await calApi<{ id: string; subscriberUrl: string }[]>(apiKey, '/webhooks')
+        await Promise.all(hooks.filter(h => h.subscriberUrl === webhook).map(h => calApi(apiKey, `/webhooks/${h.id}`, { method: 'DELETE' })))
+        const created = await calApi<{ id: string | number }>(apiKey, '/webhooks', { method: 'POST', body: JSON.stringify({ active: true, subscriberUrl: webhook, triggers: ['BOOKING_CREATED', 'BOOKING_RESCHEDULED', 'BOOKING_CANCELLED'], secret: webhookSecret }) })
+        webhookId = String(created.id)
+      }
+      await save(key, { apiKey, webhookSecret, ...(webhookId && { webhookId }) }, { account: me.username, ownerEmail: me.email, webhook }, member.name)
+      return webhook ? `Conectado a cal.com/${me.username}. Cal.com avisará al CRM en cada reserva.` : `Conectado a cal.com/${me.username}. En local no se crea el aviso automático: usa “Sincronizar ahora”.`
     }
     case 'claude': case 'openai': case 'gemini': {
       const apiKey = need(input.apiKey, 'la API key')
@@ -163,6 +187,17 @@ export async function sendWhatsApp(to: string, body: string) {
     const msg = res.error?.code === 131047 ? 'Pasaron más de 24 h desde el último mensaje del cliente: Meta solo permite plantillas aprobadas. Usa el enlace de WhatsApp.' : `Meta rechazó el mensaje: ${res.error?.message ?? r.status}`
     throw new IntegrationError(msg)
   }
+}
+
+// Llamada a la API v2 de Cal.com; devuelve `data` o lanza con el mensaje de Cal.com.
+export async function calApi<T = unknown>(apiKey: string, path: string, init: RequestInit = {}): Promise<T> {
+  const r = await fetch(`https://api.cal.com/v2${path}`, {
+    ...init, signal: AbortSignal.timeout(20_000),
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'cal-api-version': '2024-08-13', ...init.headers },
+  })
+  const body = (await r.json().catch(() => ({}))) as { status?: string; data?: T; error?: { message?: string } }
+  if (!r.ok || body.status === 'error') throw new IntegrationError(body.error?.message ?? `Cal.com respondió ${r.status}`)
+  return body.data as T
 }
 
 function postWebhook(url: string, secret: string, event: string, data: unknown) {

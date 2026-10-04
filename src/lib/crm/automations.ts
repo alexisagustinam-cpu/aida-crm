@@ -21,7 +21,7 @@ async function recordRun(key: string, status: 'ok' | 'error' | 'skipped', detail
 }
 
 // Integración que necesita cada automatización para poder correr.
-export const AUTOMATION_REQUIRES: Record<string, IntegrationKey | undefined> = { webhook_events: 'n8n', lead_email_team: 'email', daily_digest_email: 'email' }
+export const AUTOMATION_REQUIRES: Record<string, IntegrationKey | undefined> = { webhook_events: 'n8n', lead_email_team: 'email', daily_digest_email: 'email', calcom_sync: 'calcom' }
 
 // Ejecuta una automatización si está activa y deja constancia en el historial.
 // Un fallo nunca rompe la acción que la disparó: se registra como error.
@@ -40,7 +40,7 @@ export async function runAutomation(key: string, fn: () => Promise<string | void
   }
 }
 
-export const INTEGRATION_NAMES: Record<IntegrationKey, string> = { whatsapp: 'WhatsApp', email: 'el correo', n8n: 'n8n', claude: 'Claude', openai: 'OpenAI', gemini: 'Gemini' }
+export const INTEGRATION_NAMES: Record<IntegrationKey, string> = { whatsapp: 'WhatsApp', email: 'el correo', n8n: 'n8n', claude: 'Claude', openai: 'OpenAI', gemini: 'Gemini', calcom: 'Cal.com' }
 
 // Evento del CRM → webhook de n8n (si la automatización está activa y n8n conectado).
 export async function emitEvent(event: string, data: Record<string, unknown>) {
@@ -92,6 +92,11 @@ export async function runDailyChecks(opts: { force?: boolean } = {}) {
     })
     return `${due.length} ${due.length === 1 ? 'tarea' : 'tareas'} para hoy`
   })
+  // Respaldo de los avisos de Cal.com: vuelve a revisar las reservas por si alguna no llegó.
+  if (await getIntegration('calcom')) {
+    const { syncCalcom } = await import('./calcom')
+    await syncCalcom().catch(e => console.error('calcom/sync:', e))
+  }
   await runAutomation('daily_digest_email', async () => {
     const to = await teamEmails()
     if (!to.length) throw new IntegrationError('No hay correos del equipo registrados.')

@@ -6,7 +6,7 @@ import { formatAgo, nowMs } from '@/lib/crm/format'
 import { AutomationSwitch } from '@/components/crm/interactive'
 import { RunDailyButton } from '@/components/crm/run-daily'
 
-const ICONS: Record<string, string> = { won_to_client: '★', new_lead_notify: '✉', meeting_prep_task: '◷', payment_activity: '$', tasks_due_notify: '✓', webhook_events: '⇄', lead_email_team: '@', daily_digest_email: '☀' }
+const ICONS: Record<string, string> = { won_to_client: '★', new_lead_notify: '✉', meeting_prep_task: '◷', payment_activity: '$', tasks_due_notify: '✓', webhook_events: '⇄', lead_email_team: '@', daily_digest_email: '☀', calcom_sync: '▦' }
 const WHEN: Record<string, string> = {
   won_to_client: 'Cuando una oportunidad pasa a Ganado',
   new_lead_notify: 'Cuando entra un lead (CRM, web, n8n o MCP)',
@@ -16,6 +16,7 @@ const WHEN: Record<string, string> = {
   webhook_events: 'En cada evento del CRM',
   lead_email_team: 'Cuando entra un lead',
   daily_digest_email: 'Cada día a las 7:00 (hora de Ecuador)',
+  calcom_sync: 'Cuando alguien reserva, cambia o cancela en Cal.com, y cada mañana como respaldo',
 }
 const STATUS: Record<string, [string, string]> = { ok: ['green', 'Correcta'], error: ['red', 'Error'], skipped: ['orange', 'Omitida'] }
 
