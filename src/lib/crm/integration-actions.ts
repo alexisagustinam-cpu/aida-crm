@@ -1,8 +1,9 @@
 'use server'
 
+import { sql } from 'drizzle-orm'
 import { getDb, schema as s } from '@/db'
 import { action, req, str, UserError, type ActionState } from './action-helpers'
-import { connectIntegration, disconnect, aiComplete, sendEmail, sendWebhookEvent, sendWhatsApp, setAiDefault, setAiModel, type AiKey, type IntegrationKey } from './integrations'
+import { connectIntegration, disconnect, getIntegration, aiComplete, sendEmail, sendWebhookEvent, sendWhatsApp, setAiDefault, setAiModel, type AiKey, type IntegrationKey } from './integrations'
 import { createApiKey, revokeApiKey } from './api-keys'
 import { logActivity, runDailyChecks } from './automations'
 import { getClientDetail } from './queries'
@@ -141,3 +142,19 @@ async function clientContext(clientId: string) {
   ].filter(Boolean).join('\n')
 }
 
+
+// ---------- vaciar el CRM ----------
+
+// Borra los datos de negocio (clientes, leads, proyectos, tareas, reuniones, facturas, actividad y
+// avisos; CASCADE vacía lo que cuelga de ellos). Se conservan el equipo, las integraciones, las llaves
+// y las automatizaciones. Después vuelve a traer las citas de Cal.com, que sí son reales.
+export const wipeCrmDataAction = action(async (member, confirmation: string): Promise<ActionState> => {
+  adminOnly(member.role)
+  if (confirmation.trim().toUpperCase() !== 'VACIAR') throw new UserError('Escribe VACIAR para confirmar.')
+  const db = await getDb()
+  await db.execute(sql`TRUNCATE TABLE ${s.clients}, ${s.opportunities}, ${s.projects}, ${s.tasks}, ${s.meetings}, ${s.activity}, ${s.notifications}, ${s.automationRuns} CASCADE`)
+  await db.update(s.automations).set({ runs: 0, lastRunAt: null })
+  await logActivity({ kind: 'client', title: 'CRM vaciado', detail: 'Se borraron los datos de ejemplo', actor: member.name })
+  const cal = (await getIntegration('calcom')) ? await syncCalcom() : null
+  return { ok: true, message: cal ? `CRM vacío. Volví a traer de Cal.com ${cal.nueva} ${cal.nueva === 1 ? 'cita' : 'citas'}.` : 'CRM vacío.' }
+})

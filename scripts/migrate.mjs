@@ -44,13 +44,16 @@ const db = await connect()
 console.log(`Base de datos: ${db.name}`)
 await db.migrate()
 console.log('· Migraciones aplicadas')
+// Los datos de ejemplo solo se cargan en una base nueva (el seed crea la llave del formulario web).
+// Así, vaciar el CRM desde Configuración → Datos no hace que vuelvan en la próxima publicación.
+const [{ fresh }] = await db.query(`select not exists (select 1 from settings where key = 'intake_key') as fresh`)
 const [{ count }] = await db.query('select count(*)::int as count from clients')
-if (count === 0) {
+if (fresh) {
   const seed = await readFile(`${MIGRATIONS}/seed.sql`, 'utf8')
   for (const statement of seed.split(BREAK).map(s => s.replace(/^\s*--.*$/gm, '').trim()).filter(Boolean)) await db.query(statement)
   await carryOverWorkspaceEdits(db)
   console.log('· Datos de ejemplo cargados')
 } else {
-  console.log(`· La base ya tiene ${count} clientes: no se cargan datos de ejemplo`)
+  console.log(`· Base existente (${count} clientes): no se cargan datos de ejemplo`)
 }
 await db.close?.()
